@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Ant Colony</string>
+    <string name="startkey">Start</string>
+    <string name="subTitleKey">A Simulated Colony</string>
+    <string name="title_activity_simulation">SimulationActivity</string>
+    <string name="dayKey">Day</string>
+    <string name="turnKey">Turn</string>
+    <string name="plusTurnKey">+ Turn</string>
+    <string name="zoomKey">Zoom</string>
+    <string name="queenPresentKey">Queen is Present</string>
+</resources>
