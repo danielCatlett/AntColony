@@ -12,6 +12,12 @@ public class Bala extends Ant
         maxAge = 3650;
     }
 
+    public Tile[] filterViableTiles(Tile[] tiles)
+    {
+        return tiles;
+    }
+
+
     private int[] pickSpawnPoint()
     {
         int[] rv = new int[2];

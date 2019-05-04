@@ -10,4 +10,17 @@ public class Queen extends Ant
         age = 0;
         maxAge = 73000;
     }
+
+    @Override
+    public int[] move(Tile[] tilesNearBy)
+    {
+        System.out.println("Queen tried to move, but failed!");
+        return location;
+    }
+
+    public Tile[] filterViableTiles(Tile[] tiles)
+    {
+        Tile[] rv = new Tile[0];
+        return rv;
+    }
 }

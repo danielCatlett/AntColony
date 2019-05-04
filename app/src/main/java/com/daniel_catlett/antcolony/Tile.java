@@ -101,6 +101,20 @@ public class Tile
         return false;
     }
 
+    public boolean containsAFriendly()
+    {
+        if(colonyEntrance)
+            return true;
+        if(foragers.size() > 0)
+            return true;
+        if(scouts.size() > 0)
+            return true;
+        if(soldiers.size() > 0)
+            return true;
+
+        return false;
+    }
+
     public ArrayList<Integer> getForagers()
     {
         return foragers;

@@ -1,5 +1,6 @@
 package com.daniel_catlett.antcolony;
 
+import java.util.ArrayList;
 import java.util.Random;
 
 public abstract class Ant
@@ -23,52 +24,24 @@ public abstract class Ant
         return true;
     }
 
+    abstract Tile[] filterViableTiles(Tile[] tiles);
+
     public int[] getLocation()
     {
         return location;
     }
 
-    public int[] move()
+    //generic move method randomly picks direction without consideration
+    public int[] move(Tile[] tilesNearBy)
     {
         Random rngesus = new Random();
         int direction;
-        //if on top row
-        if(location[0] == 0)
-        {
-            do
-            {
-                direction = rngesus.nextInt(8);
-            } while(direction < 3);
-        }
-        //if on left column
-        else if(location[1] == 0)
-        {
-            do
-            {
-                direction = rngesus.nextInt(8);
-            } while(direction == 0 || direction == 3 || direction == 5);
-        }
-        //if on right column
-        else if(location[1] == 26)
-        {
-            do
-            {
-                direction = rngesus.nextInt(8);
-            } while(direction == 2 || direction == 4 || direction == 7);
-        }
-        //if on bottom row
-        else if(location[0] == 26)
-        {
-            do
-            {
-                direction = rngesus.nextInt(8);
-            } while(direction > 4);
-        }
-        //if not on an edge
-        else
+
+        //pick a random direction, and verify it exists in the array
+        do
         {
             direction = rngesus.nextInt(8);
-        }
+        } while(tilesNearBy[direction] == null);
 
         //move up left
         if(direction == 0)

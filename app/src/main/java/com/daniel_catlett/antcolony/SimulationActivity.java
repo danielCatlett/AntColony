@@ -32,6 +32,7 @@ public class SimulationActivity extends AppCompatActivity
     private int regionDisplayed;
     private int[] selectedTile;
     private ArrayList<Ant> ants = new ArrayList<Ant>();
+    ArrayList<Integer> deadAnts = new ArrayList<Integer>();
 
     /*
      * Set up the starting environment for the simulation
@@ -203,6 +204,8 @@ public class SimulationActivity extends AppCompatActivity
         turnCounter.setText(Integer.toString(turn % 10));
         dayCounter.setText(Integer.toString(turn / 10));
 
+        int antsCurrentlyAlive = ants.size(); //ants can't be born and act on same turn
+
         //spawn bala
         Random rngesus = new Random();
         if(rngesus.nextInt(100) < 3)
@@ -225,38 +228,60 @@ public class SimulationActivity extends AppCompatActivity
             }
         }
 
-        ArrayList<Integer> deadAnts = new ArrayList<Integer>();
-
-        for(int i = 0; i < ants.size(); i++)
+        for(int i = 0; i < Math.min(antsCurrentlyAlive, ants.size()); i++)
         {
-            if(ants.get(i).getClass() == Queen.class)
+            Ant ant = ants.get(i);
+            if(ant.getClass() == Queen.class)
             {
                 boolean antSurvived = queenProcedure(i);
                 if(!antSurvived)
                 {
-                    deadAnts.add(i);
+                    deadAnts.add(ant.id);
                     break;
                 }
             }
-//            else if(ants.get(i).getClass() == Forager.class)
-//            {
-//                foragerProcedure(i);
-//            }
-//            else if(ants.get(i).getClass() == Scout.class)
-//            {
-//                scoutProcedure(i);
-//            }
-//            else if(ants.get(i).getClass() == Soldier.class)
-//            {
-//                soldierProcedure(i);
-//            }
-//            else
-//            {
-//                balaProcedure(i);
-//            }
+            else if(ant.getClass() == Forager.class)
+            {
+                boolean antSurvived = foragerProcedure(i);
+                if(!antSurvived)
+                {
+                    deadAnts.add(ant.id);
+                }
+            }
+            else if(ant.getClass() == Scout.class)
+            {
+                boolean antSurvived = scoutProcedure(i);
+                if(!antSurvived)
+                {
+                    deadAnts.add(ant.id);
+                }
+            }
+            else if(ant.getClass() == Soldier.class)
+            {
+                boolean antSurvived = soldierProcedure(i);
+                if(!antSurvived)
+                {
+                    deadAnts.add(ant.id);
+                }
+            }
+            else
+            {
+                boolean antSurvived = balaProcedure(i);
+                if(!antSurvived)
+                {
+                    deadAnts.add(ant.id);
+                }
+            }
         }
+        //kill ants scheduled for death
+        for(int i = 0; i < deadAnts.size(); i++)
+        {
+            killAnt(deadAnts.get(i));
+        }
+
         displayBoard();
         updateDisplays();
+        deadAnts.clear();
     }
 
     private int nextId()
@@ -266,6 +291,7 @@ public class SimulationActivity extends AppCompatActivity
 
     private boolean queenProcedure(int antIndex)
     {
+        Ant queen = ants.get(antIndex);
         //queen eats
         if(board[13][13].getFood() != 0)
         {
@@ -302,6 +328,18 @@ public class SimulationActivity extends AppCompatActivity
             }
         }
 
+        //age
+        queen.growOlder();
+        if(queen.shouldDie())
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean foragerProcedure(int antIndex)
+    {
         ants.get(antIndex).growOlder();
         if(ants.get(antIndex).shouldDie())
         {
@@ -311,25 +349,257 @@ public class SimulationActivity extends AppCompatActivity
         return true;
     }
 
-//    private boolean foragerProcedure(int antIndex)
-//    {
-//
-//    }
-//
-//    private boolean scoutProcedure(int antIndex)
-//    {
-//
-//    }
-//
-//    private boolean soldierProcedure(int antIndex)
-//    {
-//
-//    }
-//
-//    private boolean balaProcedure(int antIndex)
-//    {
-//
-//    }
+    private boolean scoutProcedure(int antIndex)
+    {
+        Ant scout = ants.get(antIndex);
+
+        //move
+        int locX = scout.getLocation()[1];
+        int locY = scout.getLocation()[0];
+        Tile[] viableTiles = getAllAdjacentTiles(scout.getLocation());
+
+        int[] newLoc = scout.move(viableTiles);
+        board[locY][locX].removeScout(scout.id);
+        board[newLoc[0]][newLoc[1]].addScout(scout.id);
+
+        if(!board[newLoc[0]][newLoc[1]].isExplored())
+        {
+            board[newLoc[0]][newLoc[1]].exploreTile();
+        }
+
+        //age
+        scout.growOlder();
+        if(ants.get(antIndex).shouldDie())
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean soldierProcedure(int antIndex)
+    {
+        Ant soldier = ants.get(antIndex);
+
+        //move
+        int locX = soldier.getLocation()[1];
+        int locY = soldier.getLocation()[0];
+        if(board[locY][locX].getBalas().size() == 0)
+        {
+            Tile[] viableTiles = getAllAdjacentTiles(soldier.getLocation());
+            viableTiles = soldier.filterViableTiles(viableTiles);
+
+            int[] newLoc = soldier.move(viableTiles);
+            board[locY][locX].removeSoldier(soldier.id);
+            board[newLoc[0]][newLoc[1]].addSoldier(soldier.id);
+        }
+        //attack
+        else
+        {
+            Random rngesus = new Random();
+            int attack = rngesus.nextInt(2);
+            if(attack == 0)
+            {
+                int deadBalaId = board[locY][locX].getBalas().get(0);
+                if(deadBalaId < soldier.id)
+                {
+                    deadAnts.add(deadBalaId);
+                }
+                else
+                {
+                    killAnt(deadBalaId);
+                }
+            }
+        }
+
+        //age
+        soldier.growOlder();
+        if(ants.get(antIndex).shouldDie())
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean balaProcedure(int antIndex)
+    {
+        Ant bala = ants.get(antIndex);
+
+        //move
+        int locX = bala.getLocation()[1];
+        int locY = bala.getLocation()[0];
+        if(!board[locY][locX].containsAFriendly())
+        {
+            Tile[] viableTiles = getAllAdjacentTiles(bala.getLocation());
+
+            int[] newLoc = bala.move(viableTiles);
+            board[locY][locX].removeBala(bala.id);
+            board[newLoc[0]][newLoc[1]].addBala(bala.id);
+        }
+        //attack
+        else
+        {
+            Random rngesus = new Random();
+            int attack = rngesus.nextInt(2);
+            if(attack == 0)
+            {
+                int deadFriendlyId;
+                Tile tile = board[locY][locX];
+                if(tile.getNumSoldiers() != 0)
+                {
+                    deadFriendlyId = tile.getSoldiers().get(0);
+                }
+                else if(tile.getNumScouts() != 0)
+                {
+                    deadFriendlyId = tile.getScouts().get(0);
+                }
+                else if(tile.getNumForagers() != 0)
+                {
+                    deadFriendlyId = tile.getForagers().get(0);
+                }
+                else
+                {
+                    deadFriendlyId = 0;
+                }
+
+                if(deadFriendlyId < bala.id)
+                {
+                    deadAnts.add(deadFriendlyId);
+                }
+                else
+                {
+                    killAnt(deadFriendlyId);
+                }
+            }
+        }
+
+        //age
+        ants.get(antIndex).growOlder();
+        if(ants.get(antIndex).shouldDie())
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    //binary search for ant in list of all ants
+    //once found, remove it from it's tile,
+    //then remove it from list
+    private void killAnt(int antId)
+    {
+        int indexOfDeadAnt = -1;
+
+        int low = 0;
+        int mid;
+        int high = ants.size() - 1;
+
+        //if ant is the upper or lower bounds
+        if(ants.get(low).id == antId)
+            indexOfDeadAnt = low;
+        else if(ants.get(high).id == antId)
+            indexOfDeadAnt = high;
+
+        while(high - low > 1)
+        {
+            mid = (low + high) / 2;
+
+            //if mid is too low
+            if(ants.get(mid).id < antId)
+            {
+                low = mid;
+            }
+
+            //if the mid is too high
+            else if(ants.get(mid).id > antId)
+            {
+                high = mid;
+            }
+
+            //if the mid is right
+            else
+            {
+                indexOfDeadAnt = mid;
+                break;
+            }
+        }
+
+        //there is a return high here in my binarysearch assignment, idk why
+        //ignoring it for now
+
+        Ant deadAnt = ants.get(indexOfDeadAnt);
+
+        //remove from it's tile
+        int[] loc = deadAnt.getLocation();
+        Tile tile = board[loc[0]][loc[1]];
+        if(deadAnt.getClass() == Forager.class)
+        {
+            tile.removeForager(antId);
+        }
+        else if(deadAnt.getClass() == Scout.class)
+        {
+            tile.removeScout(antId);
+        }
+        else if(deadAnt.getClass() == Soldier.class)
+        {
+            tile.removeSoldier(antId);
+        }
+        else if(deadAnt.getClass() == Bala.class)
+        {
+            tile.removeBala(antId);
+        }
+
+        //remove from general ant list
+        ants.remove(indexOfDeadAnt);
+    }
+
+    private Tile[] getAllAdjacentTiles(int[] location)
+    {
+        Tile[] rv = new Tile[8];
+        //add upper left
+        if(!(location[0] == 0) && !(location[1] == 0))
+        {
+            rv[0] = board[location[0] - 1][location[1] - 1];
+        }
+        //add upper center
+        if(!(location[0] == 0))
+        {
+            rv[1] = board[location[0] - 1][location[1]];
+        }
+        //add upper right
+        if(!(location[0] == 0) && !(location[1] == 26))
+        {
+            rv[2] = board[location[0] - 1][location[1] + 1];
+        }
+        //add center left
+        if(!(location[1] == 0))
+        {
+            rv[3] = board[location[0]][location[1] - 1];
+        }
+        //add center right
+        if(!(location[1] == 26))
+        {
+            rv[4] = board[location[0]][location[1] + 1];
+        }
+        //add bottom left
+        if(!(location[0] == 26) && !(location[1] == 0))
+        {
+            rv[5] = board[location[0] + 1][location[1] - 1];
+        }
+        //add bottom center
+        if(!(location[0] == 26))
+        {
+            rv[6] = board[location[0] + 1][location[1]];
+        }
+        //add bottom right
+        if(!(location[0] == 26) && !(location[1] == 26))
+        {
+            rv[7] = board[location[0] + 1][location[1] + 1];
+        }
+
+        return rv;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -470,7 +740,7 @@ public class SimulationActivity extends AppCompatActivity
             {
                 selectedX += 9;
             }
-            else if(selectedX % 3 == 2)
+            else if(regionDisplayed % 3 == 2)
             {
                 selectedX += 18;
             }
@@ -479,7 +749,7 @@ public class SimulationActivity extends AppCompatActivity
             {
                 selectedY += 9;
             }
-            else if(regionDisplayed < 9)
+            else if(regionDisplayed > 5)
             {
                 selectedY += 18;
             }

@@ -9,4 +9,9 @@ public class Forager extends Ant
         age = 0;
         maxAge = 3650;
     }
+
+    public Tile[] filterViableTiles(Tile[] tiles)
+    {
+        return tiles;
+    }
 }
