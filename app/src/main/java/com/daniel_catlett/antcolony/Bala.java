@@ -10,6 +10,7 @@ public class Bala extends Ant
         location = pickSpawnPoint();
         age = 0;
         maxAge = 3650;
+        carryingFood = false;
     }
 
     public Tile[] filterViableTiles(Tile[] tiles)
@@ -52,5 +53,15 @@ public class Bala extends Ant
         }
 
         return rv;
+    }
+
+    public void addToHistory(Tile tile)
+    {
+        System.out.println("Balas have a very poor memory");
+    }
+
+    public void removeFromHistory()
+    {
+        System.out.println("Balas have a very poor memory");
     }
 }

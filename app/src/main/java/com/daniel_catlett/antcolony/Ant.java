@@ -9,6 +9,8 @@ public abstract class Ant
     protected int[] location;
     protected int age;
     protected int maxAge;
+    protected boolean carryingFood;
+    protected ArrayList<Tile> movementHistory;
 
     public void growOlder()
     {
@@ -25,6 +27,15 @@ public abstract class Ant
     }
 
     abstract Tile[] filterViableTiles(Tile[] tiles);
+
+    abstract void addToHistory(Tile tile);
+
+    abstract void removeFromHistory();
+
+    public boolean isCarryingFood()
+    {
+        return carryingFood;
+    }
 
     public int[] getLocation()
     {

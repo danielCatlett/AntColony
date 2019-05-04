@@ -9,6 +9,7 @@ public class Queen extends Ant
         location = new int[] {13, 13};
         age = 0;
         maxAge = 73000;
+        carryingFood = false;
     }
 
     @Override
@@ -22,5 +23,15 @@ public class Queen extends Ant
     {
         Tile[] rv = new Tile[0];
         return rv;
+    }
+
+    public void addToHistory(Tile tile)
+    {
+        System.out.println("The queen has a very poor memory");
+    }
+
+    public void removeFromHistory()
+    {
+        System.out.println("The queen has a very poor memory");
     }
 }

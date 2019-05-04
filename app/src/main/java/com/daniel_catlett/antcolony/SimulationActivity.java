@@ -1,5 +1,6 @@
 package com.daniel_catlett.antcolony;
 
+import android.content.Context;
 import android.graphics.Typeface;
 import android.support.constraint.ConstraintLayout;
 import android.support.constraint.ConstraintSet;
@@ -10,9 +11,12 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class SimulationActivity extends AppCompatActivity
 {
@@ -33,6 +37,9 @@ public class SimulationActivity extends AppCompatActivity
     private int[] selectedTile;
     private ArrayList<Ant> ants = new ArrayList<Ant>();
     ArrayList<Integer> deadAnts = new ArrayList<Integer>();
+    boolean simulationStillActive;
+
+    private Timer timer;
 
     /*
      * Set up the starting environment for the simulation
@@ -41,12 +48,14 @@ public class SimulationActivity extends AppCompatActivity
      */
     private void createBoard()
     {
+        simulationStillActive = true;
+
         for(int y = 0; y < 27; y++)
         {
             for(int x = 0; x < 27; x++)
             {
                 boolean isEntrance = (x == 13 && y == 13);
-                board[y][x] = new Tile(isEntrance);
+                board[y][x] = new Tile(isEntrance, y, x);
             }
         }
 
@@ -200,6 +209,18 @@ public class SimulationActivity extends AppCompatActivity
 
     private void simulationProcedure()
     {
+        if(!simulationStillActive)
+        {
+            Context context = getApplicationContext();
+            CharSequence text = "Simulation over, the Queen is dead";
+            int duration = Toast.LENGTH_LONG;
+
+            Toast toast = Toast.makeText(context, text, duration);
+            toast.show();
+
+            return;
+        }
+
         turn++;
         turnCounter.setText(Integer.toString(turn % 10));
         dayCounter.setText(Integer.toString(turn / 10));
@@ -242,11 +263,11 @@ public class SimulationActivity extends AppCompatActivity
             }
             else if(ant.getClass() == Forager.class)
             {
-                boolean antSurvived = foragerProcedure(i);
-                if(!antSurvived)
-                {
-                    deadAnts.add(ant.id);
-                }
+//                boolean antSurvived = foragerProcedure(i);
+//                if(!antSurvived)
+//                {
+//                    deadAnts.add(ant.id);
+//                }
             }
             else if(ant.getClass() == Scout.class)
             {
@@ -282,6 +303,12 @@ public class SimulationActivity extends AppCompatActivity
         displayBoard();
         updateDisplays();
         deadAnts.clear();
+
+        //check if queen is still alive
+        if(ants.get(0).getClass() != Queen.class)
+        {
+            simulationStillActive = false;
+        }
     }
 
     private int nextId()
@@ -340,7 +367,51 @@ public class SimulationActivity extends AppCompatActivity
 
     private boolean foragerProcedure(int antIndex)
     {
-        ants.get(antIndex).growOlder();
+        Ant forager = ants.get(antIndex);
+
+        //move
+        int locX = forager.getLocation()[1];
+        int locY = forager.getLocation()[0];
+        Tile[] viableTiles = getAllAdjacentTiles(forager.getLocation());
+        viableTiles = forager.filterViableTiles(viableTiles);
+
+        int[] newLoc = forager.move(viableTiles);
+        board[locY][locX].removeForager(forager.id);
+        Tile newTile = board[newLoc[0]][newLoc[1]];
+        newTile.addForager(forager.id);
+
+        if(!forager.isCarryingFood())
+        {
+            forager.addToHistory(newTile);
+            if(newTile.getFood() > 0 && !newTile.isColonyEntrance())
+            {
+                newTile.takeFood();
+                forager.carryingFood = true;
+                if(newTile.getPheromones() < 1000)
+                {
+                    newTile.addPhermones();
+                }
+            }
+        }
+        else
+        {
+            if(!newTile.isColonyEntrance())
+            {
+                forager.removeFromHistory();
+                if(newTile.getPheromones() < 1000)
+                {
+                    newTile.addPhermones();
+                }
+            }
+            else
+            {
+                forager.carryingFood = false;
+                newTile.addFood();
+            }
+        }
+
+        //age
+        forager.growOlder();
         if(ants.get(antIndex).shouldDie())
         {
             return false;
@@ -550,6 +621,12 @@ public class SimulationActivity extends AppCompatActivity
             tile.removeBala(antId);
         }
 
+        //drop food if applicable
+        if(deadAnt.isCarryingFood())
+        {
+            tile.addFood();
+        }
+
         //remove from general ant list
         ants.remove(indexOfDeadAnt);
     }
@@ -631,8 +708,11 @@ public class SimulationActivity extends AppCompatActivity
         leftButton = findViewById(R.id.leftArrowButton);
         leftButton.setOnClickListener(leftClick);
         pauseButton = findViewById(R.id.pauseButton);
+        pauseButton.setOnClickListener(pauseClick);
         playButton = findViewById(R.id.playButton);
+        playButton.setOnClickListener(playClick);
         fastPlayButton = findViewById(R.id.fastPlayButton);
+        fastPlayButton.setOnClickListener(fastPlayClick);
 
         Typeface font = Typeface.createFromAsset(getAssets(), "fonts/Fieldwork.otf");
         dayText.setTypeface(font);
@@ -817,6 +897,76 @@ public class SimulationActivity extends AppCompatActivity
     {
         @Override
         public void onClick(View view)
+        {
+            simulationProcedure();
+        }
+    };
+
+    ImageButton.OnClickListener pauseClick = new ImageButton.OnClickListener()
+    {
+        @Override
+        public void onClick(View view)
+        {
+            turnAdvanceButton.setEnabled(true);
+            timer.cancel();
+        }
+    };
+
+    ImageButton.OnClickListener playClick = new ImageButton.OnClickListener()
+    {
+        @Override
+        public void onClick(View view)
+        {
+            turnAdvanceButton.setEnabled(false);
+            if(timer != null)
+            {
+                timer.cancel();
+            }
+
+            timer = new Timer();
+            timer.scheduleAtFixedRate(new TimerTask()
+            {
+                @Override
+                public void run()
+                {
+                    timerMethod();
+                }
+            }, 0, 1000);
+        }
+    };
+
+    ImageButton.OnClickListener fastPlayClick = new ImageButton.OnClickListener()
+    {
+        @Override
+        public void onClick(View view)
+        {
+            turnAdvanceButton.setEnabled(false);
+            if(timer != null)
+            {
+                timer.cancel();
+            }
+            
+            timer = new Timer();
+            timer.scheduleAtFixedRate(new TimerTask()
+            {
+                @Override
+                public void run()
+                {
+                    timerMethod();
+                }
+            }, 0, 250);
+        }
+    };
+
+    private void timerMethod()
+    {
+        this.runOnUiThread(Timer_Tick);
+    }
+
+    private Runnable Timer_Tick = new Runnable()
+    {
+        @Override
+        public void run()
         {
             simulationProcedure();
         }

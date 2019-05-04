@@ -8,6 +8,7 @@ public class Tile
     private boolean explored;
     private int food;
     private int pheromones;
+    private int[] coordinates;
 
     //arrays with the IDs of the ants in the master ant arraylist
     private ArrayList<Integer> foragers = new ArrayList<Integer>();
@@ -15,7 +16,7 @@ public class Tile
     private ArrayList<Integer> soldiers = new ArrayList<Integer>();
     private ArrayList<Integer> balas = new ArrayList<Integer>();
 
-    public Tile(boolean isEntrance)
+    public Tile(boolean isEntrance, int yCoord, int xCoord)
     {
         colonyEntrance = isEntrance;
         explored = false;
@@ -43,6 +44,11 @@ public class Tile
     public boolean isColonyEntrance()
     {
         return colonyEntrance;
+    }
+
+    public int[] getCoordinates()
+    {
+        return coordinates;
     }
 
     public void exploreTile()

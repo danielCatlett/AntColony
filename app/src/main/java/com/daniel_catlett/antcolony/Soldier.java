@@ -8,6 +8,17 @@ public class Soldier extends Ant
         location = new int[] {13, 13};
         age = 0;
         maxAge = 3650;
+        carryingFood = false;
+    }
+
+    public void addToHistory(Tile tile)
+    {
+        System.out.println("Soldiers have a very poor memory");
+    }
+
+    public void removeFromHistory()
+    {
+        System.out.println("Soldiers have a very poor memory");
     }
 
     public Tile[] filterViableTiles(Tile[] tiles)
