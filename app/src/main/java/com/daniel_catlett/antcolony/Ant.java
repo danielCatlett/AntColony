@@ -10,7 +10,7 @@ public abstract class Ant
     protected int age;
     protected int maxAge;
     protected boolean carryingFood;
-    protected ArrayList<Tile> movementHistory;
+    protected ArrayList<Tile> movementHistory = new ArrayList<Tile>();
 
     public void growOlder()
     {

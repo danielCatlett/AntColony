@@ -47,19 +47,41 @@ public class Forager extends Ant
             //if there are multiple valid tiles, filter out the most recent tile
             if(validChoices > 1)
             {
+                boolean atLeastOneInserted = false;
                 for(int i = 0; i < 8; i++)
                 {
                     if(exploredTiles[i] != null)
                     {
-                        int[] previousLoc = movementHistory.get(0).getCoordinates();
-                        int[] possibleLoc = exploredTiles[i].getCoordinates();
-
-                        if(!(previousLoc[0] == possibleLoc[0] && previousLoc[1] == possibleLoc[1]))
+                        boolean invalid = false;
+                        for(int j = 0; j < movementHistory.size(); j++)
+                        {
+                            if(sameTile(exploredTiles[i], movementHistory.get(j)))
+                            {
+                                invalid = true;
+                            }
+                        }
+                        if(!invalid)
                         {
                             noBackTracking[i] = exploredTiles[i];
+                            atLeastOneInserted = true;
                         }
                     }
                 }
+                //if all have been visited, make sure at least the most recent is inelligible
+                if(!atLeastOneInserted)
+                {
+                    for(int i = 0; i < 8; i++)
+                    {
+                        if(exploredTiles[i] != null)
+                        {
+                            if(!sameTile(exploredTiles[i], movementHistory.get(0)))
+                            {
+                                noBackTracking[i] = exploredTiles[i];
+                            }
+                        }
+                    }
+                }
+
             }
             //otherwise return the one choice
             else
@@ -120,6 +142,19 @@ public class Forager extends Ant
 
             return rv;
         }
+    }
+
+    private boolean sameTile(Tile tile1, Tile tile2)
+    {
+        int[] previousLoc = tile1.getCoordinates();
+        int[] possibleLoc = tile2.getCoordinates();
+
+        if(!(previousLoc[0] == possibleLoc[0] && previousLoc[1] == possibleLoc[1]))
+        {
+            return false;
+        }
+
+        return true;
     }
 
     public void addToHistory(Tile tile)

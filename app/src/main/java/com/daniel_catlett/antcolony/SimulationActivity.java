@@ -76,6 +76,7 @@ public class SimulationActivity extends AppCompatActivity
         for(int i = 0; i < 50; i++)
         {
             Forager forager = new Forager(nextId());
+            forager.addToHistory(board[13][13]);
             ants.add(forager);
             board[13][13].addForager(forager.id);
         }
@@ -263,11 +264,11 @@ public class SimulationActivity extends AppCompatActivity
             }
             else if(ant.getClass() == Forager.class)
             {
-//                boolean antSurvived = foragerProcedure(i);
-//                if(!antSurvived)
-//                {
-//                    deadAnts.add(ant.id);
-//                }
+                boolean antSurvived = foragerProcedure(i);
+                if(!antSurvived)
+                {
+                    deadAnts.add(ant.id);
+                }
             }
             else if(ant.getClass() == Scout.class)
             {
@@ -338,6 +339,7 @@ public class SimulationActivity extends AppCompatActivity
             if(newAnt == 0 || newAnt == 1)
             {
                 Forager forager = new Forager(nextId());
+                forager.addToHistory(board[13][13]);
                 ants.add(forager);
                 board[13][13].addForager(forager.id);
             }
@@ -382,7 +384,10 @@ public class SimulationActivity extends AppCompatActivity
 
         if(!forager.isCarryingFood())
         {
-            forager.addToHistory(newTile);
+            if(forager.age > 0)
+            {
+                forager.addToHistory(board[locY][locX]);
+            }
             if(newTile.getFood() > 0 && !newTile.isColonyEntrance())
             {
                 newTile.takeFood();
@@ -945,7 +950,7 @@ public class SimulationActivity extends AppCompatActivity
             {
                 timer.cancel();
             }
-            
+
             timer = new Timer();
             timer.scheduleAtFixedRate(new TimerTask()
             {
